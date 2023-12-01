@@ -14,6 +14,7 @@ export interface Options {
   junitFile?: string
   junitTitle?: string
   coverageFile?: string
+  coverageCompareFile?: string;
   coverageTitle?: string
   coveragePathPrefix?: string
   hideSummary?: boolean

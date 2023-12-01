@@ -70,6 +70,11 @@ inputs:
     default: ''
     required: false
 
+  coverage-compare-path:
+    description: 'The location of the coverage.txt (Jest console output)'
+    default: ''
+    required: false
+
   coverage-title:
     description: 'Title for the coverage report'
     default: 'Coverage Report'

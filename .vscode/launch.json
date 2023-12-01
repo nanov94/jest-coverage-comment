@@ -1,6 +1,9 @@
 {
   "version": "0.2.0",
   "configurations": [
+
+
+
     {
       "name": "Local Test",
       "type": "node",
@@ -8,6 +11,18 @@
       "skipFiles": ["<node_internals>/**"],
       "runtimeArgs": ["-r", "ts-node/register"],
       "args": ["${workspaceFolder}/src/cli.ts"]
-    }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Jest Current File",
+      "program": "${workspaceFolder}/node_modules/jest/bin/jest",
+      "args": [
+        "${workspaceFolder}/__tests__/coverage.test.ts",
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "disableOptimisticBPs": true
+    },
   ]
 }

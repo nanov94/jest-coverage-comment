@@ -16,6 +16,7 @@ describe('get coverage report', () => {
     badgeTitle: 'Coverage',
     coverageTitle: 'Coverage Report',
     coverageFile: `${__dirname}/../data/coverage_1/coverage.txt`,
+    coverageCompareFile: `${__dirname}/../data/coverage_1/coverageCompare1.txt`,
     summaryFile: `${__dirname}/../data/coverage_1/coverage-summary.json`,
   }
 
