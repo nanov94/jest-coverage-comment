@@ -36,6 +36,9 @@ async function main(): Promise<void> {
     const coverageFile = core.getInput('coverage-path', {
       required: false,
     })
+    const coverageCompareFile = core.getInput('coverage-compare-path', {
+      required: false,
+    });
     const coveragePathPrefix = core.getInput('coverage-path-prefix', {
       required: false,
     })
@@ -86,6 +89,7 @@ async function main(): Promise<void> {
       junitFile,
       coverageTitle,
       coverageFile,
+      coverageCompareFile,
       coveragePathPrefix,
       hideSummary,
       removeLinksToFiles,
