@@ -191,12 +191,20 @@ const DEFAULT_COVERAGE = {
     statements: 0,
 };
 /** Convert coverage to md. */
-function coverageToMarkdown(coverageArr, options) {
+function coverageToMarkdown(coverageArr, options, coverageCompareArr) {
     const { reportOnlyChangedFiles, coverageTitle } = options;
     const { coverage } = getCoverage(coverageArr);
-    const table = toTable(coverageArr, options);
+    let coverageCompareFile;
+    if (coverageCompareArr) {
+        ;
+        ({ coverage: coverageCompareFile } = getCoverage(coverageCompareArr));
+    }
+    const table = toTable(coverageArr, options, coverageCompareArr);
     const onlyChanged = reportOnlyChangedFiles ? '• ' : '';
-    const reportHtml = `<details><summary>${coverageTitle} ${onlyChanged}(<b>${coverage}%</b>)</summary>${table}</details>`;
+    const mainCoveragePercentage = coverageCompareFile
+        ? `${coverage}% (${coverageCompareFile}%)`
+        : `${coverage}%`;
+    const reportHtml = `<details><summary>${coverageTitle} ${onlyChanged}(<b>${mainCoveragePercentage}</b>)</summary>${table}</details>`;
     return reportHtml;
 }
 /** Get coverage and color from CoverageLine[]. */
@@ -221,11 +229,14 @@ function getCoverage(coverageArr) {
     };
 }
 /** Make html table from coverage.txt. */
-function toTable(coverageArr, options) {
+function toTable(coverageArr, options, coverageCompareArr) {
     const headTr = toHeadRow();
     const totalRow = (0, parse_coverage_1.getTotalLine)(coverageArr);
     const totalTr = toTotalRow(totalRow);
     const folders = makeFolders(coverageArr, options);
+    core.info(`Row1 (folders): "${JSON.stringify(folders)}"`);
+    const pathsCompare = coverageCompareArr && getFilesDataByFileName(coverageCompareArr);
+    core.info(`Row1 (pathsCompare): "${JSON.stringify(pathsCompare)}"`);
     const { reportOnlyChangedFiles, changedFiles } = options;
     const rows = [totalTr];
     for (const key of Object.keys(folders)) {
@@ -243,7 +254,7 @@ function toTable(coverageArr, options) {
             }
             return arr.length > 1;
         })
-            .map((line) => toRow(line, (0, parse_coverage_1.isFile)(line), options));
+            .map((line) => toRow(line, (0, parse_coverage_1.isFile)(line), options, pathsCompare));
         rows.push(...files);
     }
     const hasLines = rows.length > 1;
@@ -255,14 +266,48 @@ function toTable(coverageArr, options) {
 }
 /** Make html head row - th. */
 function toHeadRow() {
-    return '<tr><th>File</th><th>% Stmts</th><th>% Branch</th><th>% Funcs</th><th>% Lines</th><th>Uncovered Line #s</th></tr>';
+    return '<tr><th>File</th><th>% Stmts</th><th>% Branch</th><th>% Funcs</th><th>% Lines</th><th>Uncovered Line</th></tr>';
 }
 /** Make html row - tr. */
-function toRow(line, indent = false, options) {
+function toRow(line, indent = false, options, pathsCompare) {
+    core.info(`Row (line): "${JSON.stringify(line)}"`);
     const { stmts, branch, funcs, lines } = line;
     const fileName = toFileNameTd(line, indent, options);
     const missing = toMissingTd(line, options);
-    return `<tr><td>${(0, parse_coverage_1.isFolder)(line) ? line.file : fileName}</td><td>${stmts}</td><td>${branch}</td><td>${funcs}</td><td>${lines}</td><td>${missing}</td></tr>`;
+    const file = (0, parse_coverage_1.isFolder)(line) ? line.file : fileName;
+    if (pathsCompare) {
+        const lineCompare = pathsCompare[line.file];
+        core.info(`Row (pathsCompare): "${JSON.stringify(pathsCompare)}"`);
+        core.info(`Row (line.file): "${line.file}"`);
+        core.info(`Row (lineCompare): "${lineCompare}"`);
+        const statements = getExtendedPercentage(lineCompare, stmts, lineCompare.stmts);
+        const branches = getExtendedPercentage(lineCompare, branch, lineCompare.branch);
+        const functions = getExtendedPercentage(lineCompare, funcs, lineCompare.funcs);
+        const linesData = getExtendedPercentage(lineCompare, lines, lineCompare.lines);
+        return `<tr><td>${file}</td><td>${statements}</td><td>${branches}</td><td>${functions}</td><td>${linesData}</td><td>${missing}</td></tr>`;
+    }
+    return `<tr><td>${file}</td><td>${stmts}</td><td>${branch}</td><td>${funcs}</td><td>${lines}</td><td>${missing}</td></tr>`;
+}
+function getExtendedPercentage(lineCompare, item, itemCompare) {
+    if (lineCompare) {
+        return `${getDiffMark(item, itemCompare)} ${item} (${itemCompare})`;
+    }
+    return `${getDiffMark(item, itemCompare)} ${item} (new)`;
+}
+const up_icon = '&#128994;';
+const down_icon = '&#128315;';
+const full_icon = '&#x2705;';
+function getDiffMark(first, second) {
+    if (first === 100) {
+        return full_icon;
+    }
+    if (first > second) {
+        return up_icon;
+    }
+    if (first < second) {
+        return down_icon;
+    }
+    return '';
 }
 /** Make summary row - tr. */
 function toTotalRow(line) {
@@ -315,18 +360,34 @@ function makeFolders(coverageArr, options) {
     }
     return folders;
 }
+function getFilesDataByFileName(coverageArr) {
+    const paths = {};
+    for (const line of coverageArr) {
+        if (line.file === 'All files') {
+            continue;
+        }
+        paths[line.file] = line;
+    }
+    return paths;
+}
 /** Return full html coverage report and coverage percentage. */
 function getCoverageReport(options) {
-    const { coverageFile } = options;
+    const { coverageFile, coverageCompareFile } = options;
     try {
         if (!coverageFile) {
             return { ...DEFAULT_COVERAGE, coverageHtml: '' };
         }
         const txtContent = (0, utils_1.getContentFile)(coverageFile);
         const coverageArr = (0, parse_coverage_1.parseCoverage)(txtContent);
+        let coverageCompareArr;
+        if (coverageCompareFile) {
+            const txtCompareContent = (0, utils_1.getContentFile)(coverageCompareFile);
+            const coverageLines = (0, parse_coverage_1.parseCoverage)(txtCompareContent);
+            coverageCompareArr = coverageLines.length ? coverageLines : undefined;
+        }
         if (coverageArr) {
             const coverage = getCoverage(coverageArr);
-            const coverageHtml = coverageToMarkdown(coverageArr, options);
+            const coverageHtml = coverageToMarkdown(coverageArr, options, coverageCompareArr);
             return { ...coverage, coverageHtml };
         }
     }
@@ -529,6 +590,9 @@ async function main() {
         const coverageFile = core.getInput('coverage-path', {
             required: false,
         });
+        const coverageCompareFile = core.getInput('coverage-compare-path', {
+            required: false,
+        });
         const coveragePathPrefix = core.getInput('coverage-path-prefix', {
             required: false,
         });
@@ -570,6 +634,7 @@ async function main() {
             junitFile,
             coverageTitle,
             coverageFile,
+            coverageCompareFile,
             coveragePathPrefix,
             hideSummary,
             removeLinksToFiles,

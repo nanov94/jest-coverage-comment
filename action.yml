@@ -1,6 +1,6 @@
-name: 'Jest Coverage Comment'
+name: 'Jest Coverage Comment + Diff'
 description: 'Comments a pull request or commit with the Jest code coverage badge, full report and tests summary'
-author: 'Misha Kav <misha.kav@gmail.com>'
+author: 'Misha Kav <misha.kav@gmail.com> + Natalia <novikovans94@gmail.com>'
 branding:
   icon: 'message-circle'
   color: 'blue'
@@ -67,6 +67,11 @@ inputs:
 
   coverage-path:
     description: 'The location of the coverage.txt (Jest console output)'
+    default: ''
+    required: false
+
+  coverage-compare-path:
+    description: 'The location of the compare coverage.txt (Jest console output)'
     default: ''
     required: false
 
