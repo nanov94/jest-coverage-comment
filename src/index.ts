@@ -36,6 +36,9 @@ async function main(): Promise<void> {
     const coverageFile = core.getInput('coverage-path', {
       required: false,
     })
+    const coverageCompareFile = core.getInput('coverage-compare-path', {
+      required: false,
+    })
     const coveragePathPrefix = core.getInput('coverage-path-prefix', {
       required: false,
     })
@@ -47,6 +50,10 @@ async function main(): Promise<void> {
     })
     const reportOnlyChangedFiles = core.getBooleanInput(
       'report-only-changed-files',
+      { required: false }
+    )
+    const reportOnlyAffectedFiles = core.getBooleanInput(
+      'report-only-affected-files',
       { required: false }
     )
     const multipleFiles = core.getMultilineInput('multiple-files', {
@@ -86,6 +93,7 @@ async function main(): Promise<void> {
       junitFile,
       coverageTitle,
       coverageFile,
+      coverageCompareFile,
       coveragePathPrefix,
       hideSummary,
       removeLinksToFiles,
@@ -93,6 +101,7 @@ async function main(): Promise<void> {
       createNewComment,
       hideComment,
       reportOnlyChangedFiles,
+      reportOnlyAffectedFiles,
       multipleFiles,
       multipleJunitFiles,
     }
