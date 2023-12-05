@@ -14,6 +14,7 @@ export interface Options {
   junitFile?: string
   junitTitle?: string
   coverageFile?: string
+  coverageCompareFile?: string
   coverageTitle?: string
   coveragePathPrefix?: string
   hideSummary?: boolean
@@ -22,6 +23,7 @@ export interface Options {
   createNewComment?: boolean
   hideComment?: boolean
   reportOnlyChangedFiles?: boolean
+  reportOnlyAffectedFiles?: boolean
   changedFiles?: ChangedFiles | null
   multipleFiles?: string[]
   multipleJunitFiles?: string[]
