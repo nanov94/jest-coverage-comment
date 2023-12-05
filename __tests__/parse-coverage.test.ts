@@ -20,7 +20,7 @@ const {
 describe('check coverage parsing', () => {
   test('should parse string line to array', () => {
     const header =
-      'File | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s'
+      'File | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line'
     const line = 'constants.ts | 0 | 100 | 100 | 0 | 1-3'
     const parsedLine = parseLine(line)
     const headerLine = parseLine(header)
@@ -126,7 +126,7 @@ describe('check coverage parsing', () => {
 
   test('should parse coverage.txt to CoverageLine[]', () => {
     const coverageTxt = `----------------|---------|----------|---------|---------|-------------------
-File            | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+File            | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line 
 ----------------|---------|----------|---------|---------|-------------------
 All files       |   70.21 |      100 |   28.57 |   71.73 |                   
  src            |   68.29 |      100 |   33.33 |   68.29 |                   
