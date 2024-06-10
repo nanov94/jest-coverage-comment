@@ -14,14 +14,17 @@ export interface Options {
   junitFile?: string
   junitTitle?: string
   coverageFile?: string
+  coverageCompareFile?: string
   coverageTitle?: string
   coveragePathPrefix?: string
   hideSummary?: boolean
   removeLinksToFiles?: boolean
   removeLinksToLines?: boolean
+  removeLines?: boolean
   createNewComment?: boolean
   hideComment?: boolean
   reportOnlyChangedFiles?: boolean
+  reportOnlyAffectedFiles?: boolean
   changedFiles?: ChangedFiles | null
   multipleFiles?: string[]
   multipleJunitFiles?: string[]
