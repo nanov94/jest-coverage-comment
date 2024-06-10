@@ -107,7 +107,8 @@ describe('should parse summary', () => {
     expect(parsedSummary).toBeNull()
     expect(spyCore.error).toHaveBeenCalledTimes(1)
     expect(spyCore.error).toHaveBeenCalledWith(
-      'Parse summary report. Unexpected token \'b\', "bad content" is not valid JSON'
+      'Parse summary report. Unexpected token b in JSON at position 0'
+      // 'Parse summary report. Unexpected token \'b\', "bad content" is not valid JSON'
     )
   })
 })

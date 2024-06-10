@@ -25,6 +25,7 @@ export function getMultipleReport(options: Options): string | null {
       '| Title | Lines | Statements | Branches | Functions |\n' +
       '| --- | --- | --- | --- | --- |\n'
 
+    console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>> lineReports', lineReports)
     for (const titleFileLine of lineReports) {
       const { title, file } = titleFileLine
       const jsonContent = getContentFile(file)

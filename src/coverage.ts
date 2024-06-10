@@ -15,14 +15,28 @@ const DEFAULT_COVERAGE: Omit<CoverageReport, 'coverageHtml'> = {
 /** Convert coverage to md. */
 function coverageToMarkdown(
   coverageArr: CoverageLine[],
-  options: Options
+  options: Options,
+  coverageCompareArr?: CoverageLine[]
 ): string {
   const { reportOnlyChangedFiles, coverageTitle } = options
   const { coverage } = getCoverage(coverageArr)
+  let coverageCompareFile
 
-  const table = toTable(coverageArr, options)
+  if (coverageCompareArr) {
+    ;({ coverage: coverageCompareFile } = getCoverage(coverageCompareArr))
+  }
+
+  const table = toTable(coverageArr, options, coverageCompareArr)
   const onlyChanged = reportOnlyChangedFiles ? '• ' : ''
-  const reportHtml = `<details><summary>${coverageTitle} ${onlyChanged}(<b>${coverage}%</b>)</summary>${table}</details>`
+
+  let mainCoveragePercentage = `${coverage}%`
+
+  if (coverageCompareFile) {
+    const icon = getDiffMark(coverage, coverageCompareFile)
+    mainCoveragePercentage = `${icon} ${coverage}% (${coverageCompareFile}%)`
+  }
+
+  const reportHtml = `<details><summary>${coverageTitle} ${onlyChanged}(<b>${mainCoveragePercentage}</b>)</summary>${table}</details>`
 
   return reportHtml
 }
@@ -55,13 +69,19 @@ function getCoverage(
 }
 
 /** Make html table from coverage.txt. */
-function toTable(coverageArr: CoverageLine[], options: Options): string {
+function toTable(
+  coverageArr: CoverageLine[],
+  options: Options,
+  coverageCompareArr?: CoverageLine[]
+): string {
   const headTr = toHeadRow()
 
   const totalRow = getTotalLine(coverageArr)
   const totalTr = toTotalRow(totalRow)
 
   const folders = makeFolders(coverageArr, options)
+  const pathsCompare =
+    coverageCompareArr && getFilesDataByFileName(coverageCompareArr)
   const { reportOnlyChangedFiles, changedFiles } = options
   const rows = [totalTr]
 
@@ -82,7 +102,7 @@ function toTable(coverageArr: CoverageLine[], options: Options): string {
 
         return arr.length > 1
       })
-      .map((line) => toRow(line, isFile(line), options))
+      .map((line) => toRow(line, isFile(line), options, pathsCompare))
     rows.push(...files)
   }
 
@@ -98,19 +118,108 @@ function toTable(coverageArr: CoverageLine[], options: Options): string {
 
 /** Make html head row - th. */
 function toHeadRow(): string {
-  return '<tr><th>File</th><th>% Stmts</th><th>% Branch</th><th>% Funcs</th><th>% Lines</th><th>Uncovered Line #s</th></tr>'
+  return '<tr><th>File</th><th>% Stmts</th><th>% Branch</th><th>% Funcs</th><th>% Lines</th><th>Uncovered Line</th></tr>'
 }
 
 /** Make html row - tr. */
-function toRow(line: CoverageLine, indent = false, options: Options): string {
+function toRow(
+  line: CoverageLine,
+  indent = false,
+  options: Options,
+  pathsCompare?: { [key: string]: CoverageLine }
+): string {
   const { stmts, branch, funcs, lines } = line
 
   const fileName = toFileNameTd(line, indent, options)
   const missing = toMissingTd(line, options)
 
-  return `<tr><td>${
-    isFolder(line) ? line.file : fileName
-  }</td><td>${stmts}</td><td>${branch}</td><td>${funcs}</td><td>${lines}</td><td>${missing}</td></tr>`
+  const file = isFolder(line) ? line.file : fileName
+
+  if (pathsCompare) {
+    const lineCompare = pathsCompare[line.file]
+
+    core.info(`Row (line.file): "${line.file}"`)
+    core.info(`Row (lineCompare): "${lineCompare}"`)
+
+    if (options.reportOnlyAffectedFiles && !isAffectedFile(line, lineCompare)) {
+      return ''
+    }
+
+    const statements = getExtendedPercentage(
+      lineCompare,
+      stmts,
+      lineCompare?.stmts
+    )
+    const branches = getExtendedPercentage(
+      lineCompare,
+      branch,
+      lineCompare?.branch
+    )
+    const functions = getExtendedPercentage(
+      lineCompare,
+      funcs,
+      lineCompare?.funcs
+    )
+    const linesData = getExtendedPercentage(
+      lineCompare,
+      lines,
+      lineCompare?.lines
+    )
+
+    return `<tr><td>${file}</td><td>${statements}</td><td>${branches}</td><td>${functions}</td><td>${linesData}</td><td>${missing}</td></tr>`
+  }
+
+  return `<tr><td>${file}</td><td>${stmts}</td><td>${branch}</td><td>${funcs}</td><td>${lines}</td><td>${missing}</td></tr>`
+}
+
+function isAffectedFile(
+  line: CoverageLine,
+  lineCompare: CoverageLine
+): boolean {
+  const { stmts, branch, funcs, lines } = lineCompare || {}
+
+  return (
+    line.stmts !== stmts ||
+    line.branch !== branch ||
+    line.funcs !== funcs ||
+    line.lines !== lines
+  )
+}
+
+function getExtendedPercentage(
+  lineCompare: CoverageLine,
+  item: number,
+  itemCompare?: number
+): string {
+  if (lineCompare) {
+    return `${getDiffMark(item, itemCompare)} ${item} (${itemCompare})`
+  }
+
+  return `${getDiffMark(item)} ${item} (new)`
+}
+
+const up_icon = '&#128994;'
+const down_icon = '&#128315;'
+const full_icon = '&#x2705;'
+
+function getDiffMark(first: number, second?: number): string {
+  if (first === 100) {
+    return full_icon
+  }
+
+  if (!second) {
+    return ''
+  }
+
+  if (first > second) {
+    return up_icon
+  }
+
+  if (first < second) {
+    return down_icon
+  }
+
+  return ''
 }
 
 /** Make summary row - tr. */
@@ -150,7 +259,7 @@ function toFileNameTd(
 
 /** Make missing cell - td. */
 function toMissingTd(line: CoverageLine, options: Options): string {
-  if (!line.uncoveredLines?.length) {
+  if (!line.uncoveredLines?.length || options.removeLines) {
     return '&nbsp;'
   }
 
@@ -195,9 +304,25 @@ function makeFolders(
   return folders
 }
 
+function getFilesDataByFileName(coverageArr: CoverageLine[]): {
+  [key: string]: CoverageLine
+} {
+  const paths: { [key: string]: CoverageLine } = {}
+
+  for (const line of coverageArr) {
+    if (line.file === 'All files') {
+      continue
+    }
+
+    paths[line.file] = line
+  }
+
+  return paths
+}
+
 /** Return full html coverage report and coverage percentage. */
 export function getCoverageReport(options: Options): CoverageReport {
-  const { coverageFile } = options
+  const { coverageFile, coverageCompareFile } = options
 
   try {
     if (!coverageFile) {
@@ -207,9 +332,21 @@ export function getCoverageReport(options: Options): CoverageReport {
     const txtContent = getContentFile(coverageFile)
     const coverageArr = parseCoverage(txtContent)
 
+    let coverageCompareArr
+
+    if (coverageCompareFile) {
+      const txtCompareContent = getContentFile(coverageCompareFile)
+      const coverageLines = parseCoverage(txtCompareContent)
+      coverageCompareArr = coverageLines.length ? coverageLines : undefined
+    }
+
     if (coverageArr) {
       const coverage = getCoverage(coverageArr)
-      const coverageHtml = coverageToMarkdown(coverageArr, options)
+      const coverageHtml = coverageToMarkdown(
+        coverageArr,
+        options,
+        coverageCompareArr
+      )
 
       return { ...coverage, coverageHtml }
     }

@@ -50,6 +50,11 @@ inputs:
     default: 'false'
     required: false
 
+  remove-lines:
+    description: 'Remove lines info from table'
+    default: ''
+    required: false
+
   create-new-comment:
     description: 'When false, will update the same comment, otherwise will publish new comment on each run'
     default: 'false'
@@ -70,6 +75,11 @@ inputs:
     default: ''
     required: false
 
+  coverage-compare-path:
+    description: 'The location of the compare coverage.txt (Jest console output)'
+    default: ''
+    required: false
+
   coverage-title:
     description: 'Title for the coverage report'
     default: 'Coverage Report'
@@ -82,6 +92,11 @@ inputs:
 
   report-only-changed-files:
     description: 'Show in report only changed files for this commit, and not all files'
+    default: 'false'
+    required: false
+
+  report-only-affected-files:
+    description: 'Show in report only files which affected by commit, and not all files'
     default: 'false'
     required: false
 
